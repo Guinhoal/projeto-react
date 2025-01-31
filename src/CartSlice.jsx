@@ -24,10 +24,16 @@ export const CartSlice = createSlice({
       if (itemToUpdate) {
         itemToUpdate.quantity = quantity;
       }
+      // Remove item if quantity is 0
+      if (quantity === 0) {
+        state.items = state.items.filter((item) => item.name !== name);
+      }
     },
   },
 });
 
+// Export the action creators
 export const { addItem, removeItem, updateQuantity } = CartSlice.actions;
 
+// Export the reducer as default
 export default CartSlice.reducer;

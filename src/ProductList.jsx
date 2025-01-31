@@ -1,22 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "./ProductList.css";
+import { useDispatch, useSelector } from "react-redux";
+import { addItem, removeItem } from "./CartSlice";
 import CartItem from "./CartItem";
+
 function ProductList() {
   const [showCart, setShowCart] = useState(false);
-  const [showPlants, setShowPlants] = useState(false);
-  const [addedCart, setAddedCart] = useState({});
-
-  const cartItems = useSelector((state) => state.cart.items);
-  const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const [addedToCart, setAddedToCart] = useState({});
   const dispatch = useDispatch();
-
-  const handleAddToCart = (product) => {
-    dispatch(addItem(product));
-    setAddedToCart((prevState) => ({
-      ...prevState,
-      [product.name]: true,
-    }));
-  };
+  const cart = useSelector((state) => state.cart.items);
 
   const plantsArray = [
     {
@@ -280,14 +272,40 @@ function ProductList() {
     fontSize: "30px",
     textDecoration: "none",
   };
+
+  const totalItems = cart.reduce(
+    (total, item) => total + (item.quantity || 1),
+    0
+  );
+
   const handleCartClick = (e) => {
     e.preventDefault();
     setShowCart(true); // Set showCart to true when cart icon is clicked
   };
+
   const handlePlantsClick = (e) => {
     e.preventDefault();
-    setShowPlants(true); // Set showAboutUs to true when "About Us" link is clicked
-    setShowCart(false); // Hide the cart when navigating to About Us
+    const plantsSection = document.getElementById("plants-section");
+    if (plantsSection) {
+      plantsSection.scrollIntoView({ behavior: "smooth" });
+    }
+    setShowCart(false);
+  };
+
+  const handleAddToCart = (plant) => {
+    dispatch(addItem(plant));
+    setAddedToCart((prevState) => ({
+      ...prevState,
+      [plant.name]: true, // Set the product name as key and value as true to indicate it's added to cart
+    }));
+  };
+
+  const handleRemoveFromCart = (plantName) => {
+    dispatch(removeItem(plantName)); // Remove do estado global
+    setAddedToCart((prevState) => ({
+      ...prevState,
+      [plantName]: false, // Reativa o botão
+    }));
   };
 
   const handleContinueShopping = (e) => {
@@ -303,7 +321,7 @@ function ProductList() {
               src="https://cdn.pixabay.com/photo/2020/08/05/13/12/eco-5465432_1280.png"
               alt=""
             />
-            <a href="/" style={{ textDecoration: "none" }}>
+            <a href="/e-plantShopping/" style={{ textDecoration: "none" }}>
               <div>
                 <h3 style={{ color: "white" }}>Paradise Nursery</h3>
                 <i style={{ color: "white" }}>Where Green Meets Serenity</i>
@@ -344,24 +362,33 @@ function ProductList() {
                 </svg>
               </h1>
             </a>
+            <span
+              style={{
+                position: "absolute",
+                top: "0px",
+                right: "10px",
+                backgroundColor: "red",
+                color: "white",
+                borderRadius: "50%",
+                width: "20px",
+                height: "20px",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                fontSize: "14px",
+                fontWeight: "bold",
+              }}
+            >
+              {totalItems}
+            </span>
           </div>
         </div>
       </div>
       {!showCart ? (
-        <div className="product-grid">
+        <div id="plants-section" className="product-grid">
           {plantsArray.map((category, index) => (
             <div key={index}>
-              <h1 style={{}}>
-                <div
-                  style={{
-                    alignContent: "center",
-                    textAlign: "center",
-                    marginTop: "23px",
-                  }}
-                >
-                  {category.category}
-                </div>
-              </h1>
+              <h1 className="category-title">{category.category}</h1>
               <div className="product-list">
                 {category.plants.map((plant, plantIndex) => (
                   <div className="product-card" key={plantIndex}>
@@ -370,12 +397,26 @@ function ProductList() {
                       src={plant.image}
                       alt={plant.name}
                     />
-                    <div className="product-title">{plant.name}</div>
+                    <h3 className="product-title">{plant.name}</h3>
+                    <p className="product-description">{plant.description}</p>
+                    <p className="product-cost">
+                      <strong>Cost:</strong> {plant.cost}
+                    </p>
                     <button
                       className="product-button"
                       onClick={() => handleAddToCart(plant)}
+                      disabled={addedToCart[plant.name]}
+                      style={{
+                        backgroundColor: addedToCart[plant.name]
+                          ? "#d3d3d3"
+                          : "#4CAF50",
+                        color: "white",
+                        cursor: addedToCart[plant.name]
+                          ? "not-allowed"
+                          : "pointer",
+                      }}
                     >
-                      Add to Cart
+                      {addedToCart[plant.name] ? "Added" : "Add to Cart"}
                     </button>
                   </div>
                 ))}
@@ -384,7 +425,10 @@ function ProductList() {
           ))}
         </div>
       ) : (
-        <CartItem onContinueShopping={handleContinueShopping} />
+        <CartItem
+          onContinueShopping={handleContinueShopping}
+          onRemoveItem={handleRemoveFromCart}
+        />
       )}
     </div>
   );
